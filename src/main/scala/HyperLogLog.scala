@@ -2,7 +2,7 @@ import com.twitter.algebird.HyperLogLog.int2Bytes
 
 import com.twitter.algebird._
 
-trait Aproximate {
+trait DisplayApproximate {
   def algName: String
   def aprox: Approximate[Long]
   def show: Unit = {
@@ -11,20 +11,32 @@ trait Aproximate {
   }
 }
 
-case class HyperLogLogMonoidTest(bits: Int = 10, data: Vector[Int]) extends Aproximate {
+case class BruteForce(dataList: Vector[Vector[Int]]) extends DisplayApproximate {
+  override def algName: String = "Brute Force"
+
+  override def aprox: Approximate[Long] = {
+    val distinct = dataList.reduce(_ ++ _).distinct.length.toLong
+    Approximate(distinct, distinct, distinct, 1)
+  }
+}
+
+case class HyperLogLogMonoidTest(bits: Int = 10, dataList: Vector[Vector[Int]]) extends DisplayApproximate {
   override def algName: String = "HyperLogLogMonoid"
   override def aprox: Approximate[Long] = {
     val hllMonoid = new HyperLogLogMonoid(bits = bits)
-    val hlls = data.map {
-      hllMonoid.create(_)
-    }
-    val combinedHLL = hllMonoid.sum(hlls)
+    val hllsList = dataList.map (
+      data => data.map(hllMonoid.create(_))
+    )
+    val HLLs = hllsList.map(hllMonoid.sum(_))
+
+    // TODO: how to store intermediate steps?
+    val combinedHLL = HLLs.reduce(_ + _)
     hllMonoid.sizeOf(combinedHLL)
   }
 
 }
 
-case class HyperLogLogAggregatorTest(err: Double = 0.01, data: Vector[Int]) extends Aproximate {
+case class HyperLogLogAggregatorTest(err: Double = 0.01, data: Vector[Int]) extends DisplayApproximate {
   override def algName: String = "HyperLogLogAggregator"
   override def aprox: Approximate[Long] = {
     val agg = HyperLogLogAggregator.withErrorGeneric[Int](err)
@@ -44,8 +56,10 @@ object HyperLogLog extends App {
     result
   }
 
-  val data = ReadFile().users
+  val sample = ReadFile()
+  val data = Vector(sample.users, sample.users2, sample.users3)
 
-  time { HyperLogLogAggregatorTest(0.01, data).show }
+//  time { HyperLogLogAggregatorTest(0.01, data).show }
   time { HyperLogLogMonoidTest(14, data).show }
+  time { BruteForce(data).show }
 }
