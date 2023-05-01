@@ -36,16 +36,6 @@ case class HyperLogLogMonoidTest(bits: Int = 10, dataList: Vector[Vector[Int]]) 
 
 }
 
-case class HyperLogLogAggregatorTest(err: Double = 0.01, data: Vector[Int]) extends DisplayApproximate {
-  override def algName: String = "HyperLogLogAggregator"
-  override def aprox: Approximate[Long] = {
-    val agg = HyperLogLogAggregator.withErrorGeneric[Int](err)
-    val combinedHLLAgg = agg(data)
-    combinedHLLAgg.approximateSize
-  }
-
-}
-
 object HyperLogLog extends App {
 
   def time[R](block: => R): R = {
@@ -59,7 +49,6 @@ object HyperLogLog extends App {
   val sample = ReadFile()
   val data = Vector(sample.users, sample.users2, sample.users3)
 
-//  time { HyperLogLogAggregatorTest(0.01, data).show }
   time { HyperLogLogMonoidTest(14, data).show }
   time { BruteForce(data).show }
 }
