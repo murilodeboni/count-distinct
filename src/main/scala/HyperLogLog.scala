@@ -23,19 +23,19 @@ case class BruteForce(dataList: Map[LocalDate, Vector[Int]]) extends DisplayAppr
   }
 }
 
-case class HyperLogLogMonoidTest(bits: Int = 10, dataList: Map[LocalDate, Vector[Int]]) extends DisplayApproximate {
+case class HyperLogLogMonoidTest(bits: Int = 10, dateList: List[LocalDate]) extends DisplayApproximate {
   val hllMonoid = new HyperLogLogMonoid(bits = bits)
   override def algName: String = "HyperLogLogMonoid"
 
   override def aprox: Approximate[Long] = {
-    val dateMap: Map[LocalDate, HLL] = dataList.map{case (date, vector) => if (fileExists(date)) {
-      date -> fromBytes(readFileToArray(date))
+    val dateMap: List[HLL] = dateList.map(date => if (fileExists(date)) {
+      fromBytes(readFileToArray(date))
     } else {
-      date -> getHLL(vector, date, hllMonoid)
-    }}
+      getHLL(ReadFile(), date, hllMonoid)
+    })
 
     // TODO: how to store intermediate steps?
-    val combinedHLL = dateMap.values.reduce(_ + _)
+    val combinedHLL = dateMap.reduce(_ + _)
     hllMonoid.sizeOf(combinedHLL)
   }
 
@@ -51,15 +51,14 @@ object HyperLogLog extends App {
     result
   }
 
-  val date1: LocalDate = LocalDate.of(2019, 1, 1)
-  val date2: LocalDate = LocalDate.of(2019, 1, 2)
-  val date3: LocalDate = LocalDate.of(2019, 1, 2)
+  def dateList(startDate: LocalDate, days: Int): List[LocalDate] = {
+    if (days == 1) List(startDate.plusDays(1))
+    else startDate.plusDays(1) :: dateList(startDate.plusDays(1), days - 1)
+  }
 
-  val sample = ReadFile()
+  val dates = dateList(LocalDate.of(2019, 1, 1), 10)
 
-  val data = Map(date1 -> sample.users, date2 -> sample.users2, date3 -> sample.users3)
-
-  time { HyperLogLogMonoidTest(14, data).show }
+  time { HyperLogLogMonoidTest(14, dates).show }
 //  time { BruteForce(data).show }
 }
 

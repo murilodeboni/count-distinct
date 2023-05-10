@@ -10,7 +10,8 @@ case class ReadFile(path: String = "./data/full.csv") {
       case _: Throwable => //println("error in " + line)
     }
   }
-  val users2: Vector[Int] = users.map(_+10).drop(10000)
-  val users3: Vector[Int] = users.map(_+50).dropRight(50000)
-  bufferedSource.close
+}
+
+object ReadFile {
+  def apply(path: String = "./data/full.csv"): Vector[Int] = new ReadFile(path).users
 }
